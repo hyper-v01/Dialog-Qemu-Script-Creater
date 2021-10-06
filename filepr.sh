@@ -8,7 +8,7 @@ case $filename in
     "floppy")
         export file="软盘镜像文件";;
     "bios")
-        export file="BIOS二进制固件";;
+        export file="BIOS固件";;
     "vmlinuz")
         export file="Linux内核启动文件";;
     "initrd")
