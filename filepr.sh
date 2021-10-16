@@ -1,4 +1,5 @@
 #!/bin/zsh
+#将得到的字符串转义
 export filename=$1
 case $filename in
     "disk")
@@ -8,7 +9,7 @@ case $filename in
     "floppy")
         export file="软盘镜像文件";;
     "bios")
-        export file="BIOS固件";;
+        export file="BIOS二进制固件";;
     "vmlinuz")
         export file="Linux内核启动文件";;
     "initrd")
@@ -17,7 +18,7 @@ case $filename in
         echo "本程序不能直接运行，正在退出"
         exit;;
 esac
-
+#获得文件绝对路径
 function file_path_scan
 {
     while true
@@ -53,7 +54,7 @@ function file_path_scan
         fi
     done
 }
-
+#将得到的信息组成Dialog内容
 function file_find
 {
     export lines=$(cat find.txt|wc -l)
@@ -69,6 +70,7 @@ function file_find
             return
         else
             export sel2=$(cat find.txt|tail -n $(cat sel.txt)|head -n 1)
+            name_process
             rm sel.txt find.txt dialog.txt
             export sel2="$sel$sel2"
             echo $sel2 > sel2_$filename.log
@@ -76,7 +78,7 @@ function file_find
         fi
     done
 }
-
+#寻找文件并整理成信息
 function file_find2
 {
     case $1 in
@@ -105,8 +107,131 @@ function file_find2
                 ls $sel|grep -i -E 'initrd|initramfs' > find.txt
             fi;;
     esac
-    # clear
-    # echo "1"
-    # cat find.txt
+}
+
+function name_process
+{
+    for ((spstr=1; spstr<=$(echo ${#sel2}); spstr++))
+    do
+        if  [ $sel2[$spstr] = '/' ]; then
+            if [ $sel2[$[$spstr-1]] = '\' ]; then
+                :
+            else
+                export sel2=$(echo ${sel2/\//'\/'})
+            fi
+        else
+            if [ $sel2[$spstr] = '\' ]; then
+                if [ $sel2[$[$spstr-1]] = '\' ]; then
+                    :
+                else
+                    export sel2=$(echo ${sel2/\\/'\\'})
+                fi
+            else
+                if [ $sel2[$spstr] = '(' ]; then
+                    if [ $sel2[$[$spstr-1]] = '\' ]; then
+                        :
+                    else
+                        export sel2=$(echo ${sel2/\(/'\('})
+                    fi
+                else
+                    if [ $sel2[$spstr] = ')' ]; then
+                        if [ $sel2[$[$spstr-1]] = '\' ]; then
+                            :
+                        else
+                            export sel2=$(echo ${sel2/\)/'\)'})
+                        fi
+                    else
+                        if [ $sel2[$spstr] = "'" ]; then
+                            if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                :
+                            else
+                                export sel2=$(echo ${sel2/\'/"\'"})
+                            fi
+                        else
+                            if [ $sel2[$spstr] = '"' ]; then
+                                if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                    :
+                                else
+                                    export sel2=$(echo ${sel2/\"/'\"'})
+                                fi
+                            else
+                                if [ $sel2[$spstr] = '?' ]; then
+                                    if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                        :
+                                    else
+                                        export sel2=$(echo ${sel2/\?/'\?'})
+                                    fi
+                                else
+                                    if [ $sel2[$spstr] = '~' ]; then
+                                        if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                            :
+                                        else
+                                            export sel2=$(echo ${sel2/\~/'\~'})
+                                        fi
+                                    else
+                                        if [ $sel2[$spstr] = '`' ]; then
+                                            if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                                :
+                                            else
+                                                export sel2=$(echo ${sel2/\`/'\`'})
+                                            fi
+                                        else
+                                            if [ $sel2[$spstr] = '#' ]; then
+                                                if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                                    :
+                                                else
+                                                    export sel2=$(echo ${sel2/\#/'\#'})
+                                                fi
+                                            else
+                                                if [ $sel2[$spstr] = '$' ]; then
+                                                    if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                                        :
+                                                    else
+                                                        export sel2=$(echo ${sel2/\$/'\$'})
+                                                    fi
+                                                else
+                                                    if [ $sel2[$spstr] = '&' ]; then
+                                                        if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                                            :
+                                                        else
+                                                            export sel2=$(echo ${sel2/\&/'\&'})
+                                                        fi
+                                                    else
+                                                        if [ $sel2[$spstr] = '*' ]; then
+                                                            if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                                                :
+                                                            else
+                                                                export sel2=$(echo ${sel2/\*/'\*'})
+                                                            fi
+                                                        else
+                                                            if [ $sel2[$spstr] = '<' ]; then
+                                                                if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                                                    :
+                                                                else
+                                                                    export sel2=$(echo ${sel2/\</'\<'})
+                                                                fi
+                                                            else
+                                                                if [ $sel2[$spstr] = '>' ]; then
+                                                                    if [ $sel2[$[$spstr-1]] = '\' ]; then
+                                                                        :
+                                                                    else
+                                                                        export sel2=$(echo ${sel2/\>/'\>'})
+                                                                    fi
+                                                                fi
+                                                            fi
+                                                        fi
+                                                    fi
+                                                fi
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                            fi
+                        fi
+                    fi
+                fi
+            fi
+        fi
+    done
 }
 file_path_scan
