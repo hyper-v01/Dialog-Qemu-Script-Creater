@@ -12,3 +12,7 @@ bili : https://space.bilibili.com/234069376
   3）  脚本生成后询问用户是否立即运行
   
   4）  移除了him
+
+2021-10-24 15:25更新
+
+  更新-enable-kvm功能
