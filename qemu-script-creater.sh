@@ -32,7 +32,10 @@ function main
 	    fi
 		case $(cat sel.log) in 
 			1)
-				./filepr.sh "disk";;
+                makeimg
+                if (( $? == 1 )); then
+				    ./filepr.sh "disk"
+                fi;;
 			2)
 				./filepr.sh "cdrom";;
 			3)
@@ -338,6 +341,106 @@ function monitor
         fi
     done
 }
+#制作一个新的磁盘函数
+function makeimg {
+    while true
+    do
+        dialog --menu "新建一个磁盘向导,退出此界面将选择本地磁盘" 40 200 180 \
+        "1" "格式" \
+        "2" "大小" 2> crdisk.log
+        if (( $? == 1 )); then
+            return 1
+        else
+            while true
+            do
+                case $(cat crdisk.log) in
+                    1)
+                        dialog --menu "选择一个磁盘格式" 40 200 180 \
+                        "1" "raw（建议） .img" \
+                        "2" "vpc .vhd" \
+                        "3" "qcow .qcow" \
+                        "4" "qcow2 .qcow2" 2> disk_format.log
+                        if (( $? ==1 )); then
+                            break
+                        else
+                            case $(cat disk_format.log) in
+                                1)
+                                    export disk_format="-f raw"
+                                    export namefor=".img"
+                                    rm disk_format.log;;
+                                2)
+                                    export disk_format="-f vpc"
+                                    export namefor=".vhd"
+                                    rm disk_format.log;;
+                                3)
+                                    export disk_format="-f qcow"
+                                    export namefor=".qcow"
+                                    rm disk_format.log;;
+                                4)
+                                    export disk_format="-f qcow2"
+                                    export namefor=".qcow2"
+                                    rm disk_format.log;;
+                            esac
+                            rm disk_format.log
+                            rm crdisk.log
+                            break
+                        fi;;
+                    2)
+                        dialog --inputbox "输入一个数字，它将作为磁盘的大小(单位 : GiB)" 40 200 40 2> disk_size.log
+                        if (( $? == 1 )); then
+                            break
+                        else
+                            export size=$(cat disk_size.log|tr -cd '[0-9]')
+                            if [ -z $size ]; then
+                                dialog --msgbox "输入数字为空,使用默认大小:40GiB" 200 40 180
+                                if (( $? != 0 )); then
+                                    export size="40G"
+                                    rm disk_size.log
+                                    break
+                                else
+                                    rm disk_size.log
+                                    break
+                                fi
+                            else
+                                export disk_size="${size}G"
+                                rm disk_size.log
+                                break
+                            fi
+                        fi;;
+                esac
+            done
+        fi
+        if ! [ -z "$disk_format" ]; then
+            if ! [ -z "$size" ]; then
+                while true
+                do
+                    dialog --inputbox "磁盘名字:" 200 40  2> disk_name.log
+                    if (( $? == 1 )); then
+                        dialog --msgbox "你已经完成格式和大小设置,确实要退出吗?" 200 40 180
+                        if (( $? == 1 )); then
+                            break
+                        fi
+                    fi
+                    if [ -z "$(cat disk_name.log)" ]; then
+                        dialog --msgbox "名字不能为空" 200 40 180 
+                        rm disk_name.log
+                    else
+                        export disk_name=$(cat disk_name.log)
+                        rm disk_name.log
+                        rm crdisk.log
+                        qemu-img create $disk_format ${disk_name}${namefor} $disk_size
+                        export RealDISK="-drive if=none,file=$(pwd)/${disk_name}${namefor},id=hd0"
+                        return 0
+                    fi                
+                done
+            else
+                :
+            fi
+        else
+            :
+        fi
+    done
+}
 #Telnet端口
 function telnet_port
 {
@@ -509,7 +612,7 @@ function enable_kvm
 #保存并退出
 function save_exit
 {
-    export mu=""
+    export mu=
     if test -z $RealMEM; then
         export mu+=" 内存设置"
     fi
@@ -587,8 +690,7 @@ function filepr
     done
 }
 #检查所需的软件
-function app_check
-{
+function app_check {
     echo "欢迎使用Qemu脚本生成器2.0 With Dialog"
     sleep 1s
     echo "作者:Hyper-V Manager|hyper-v管理器"
@@ -606,6 +708,9 @@ function app_check
     fi
     if ! command -v zsh &> /dev/null; then
         export not_installed+=" zsh"
+    fi
+    if ! command -v qemu-img &> /dev/null; then
+        export not_installed+=" qemu-common"
     fi
     if test -z $not_installed; then
         echo "检查完成"
