@@ -710,7 +710,7 @@ function app_check {
         export not_installed+=" zsh"
     fi
     if ! command -v qemu-img &> /dev/null; then
-        export not_installed+=" qemu-common"
+        export not_installed+=" qemu-utils"
     fi
     if test -z $not_installed; then
         echo "检查完成"
